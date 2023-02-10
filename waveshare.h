@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -12,8 +14,6 @@
 #include <ctype.h>
 #include <signal.h>
 #include <sys/time.h>
-
-#include "mia_frames.h"
 
 #define CANUSB_INJECT_SLEEP_GAP_DEFAULT 200 /* ms */
 #define CANUSB_TTY_BAUD_RATE_DEFAULT 2000000
@@ -58,8 +58,6 @@ static int program_running = 1;
 static int inject_payload_mode = CANUSB_INJECT_PAYLOAD_MODE_FIXED;
 static float inject_sleep_gap = CANUSB_INJECT_SLEEP_GAP_DEFAULT;
 static int print_traffic = 0;
-
-
 
 static CANUSB_SPEED canusb_int_to_speed(int speed)
 {
@@ -496,147 +494,4 @@ static int adapter_init(const char *tty_device, int baudrate)
     }
 
     return tty_fd;
-}
-
-
-
-static void display_help(const char *progname)
-{
-    fprintf(stderr, "Usage: %s <options>\n", progname);
-    fprintf(stderr, "Options:\n"
-                    "  -h          Display this help and exit.\n"
-                    "  -t          Print TTY/serial traffic debugging info on stderr.\n"
-                    "  -d DEVICE   Use TTY DEVICE.\n"
-                    "  -s SPEED    Set CAN SPEED in bps.\n"
-                    "  -b BAUDRATE Set TTY/serial BAUDRATE (default: %d).\n"
-                    "  -i ID       Inject using ID (specified as hex string).\n"
-                    "  -j DATA     CAN DATA to inject (specified as hex string).\n"
-                    "  -n COUNT    Terminate after COUNT frames (default: infinite).\n"
-                    "  -g MS       Inject sleep gap in MS milliseconds (default: %d ms).\n"
-                    "  -m MODE     Inject payload MODE (%d = random, %d = incremental, %d = fixed).\n"
-                    "\n",
-            CANUSB_TTY_BAUD_RATE_DEFAULT,
-            CANUSB_INJECT_SLEEP_GAP_DEFAULT,
-            CANUSB_INJECT_PAYLOAD_MODE_RANDOM,
-            CANUSB_INJECT_PAYLOAD_MODE_INCREMENTAL,
-            CANUSB_INJECT_PAYLOAD_MODE_FIXED);
-}
-
-
-
-static void sigterm(int signo)
-{
-    program_running = 0;
-}
-
-
-
-int main(int argc, char *argv[])
-{
-    int c, tty_fd;
-    char *tty_device = NULL, *inject_data = NULL, *inject_id = NULL;
-    CANUSB_SPEED speed = 0;
-    int baudrate = CANUSB_TTY_BAUD_RATE_DEFAULT;
-
-    while ((c = getopt(argc, argv, "htd:s:b:i:j:n:g:m:")) != -1) {
-        switch (c) {
-            case 'h':
-                display_help(argv[0]);
-                return EXIT_SUCCESS;
-
-            case 't':
-                print_traffic++;
-                break;
-
-            case 'd':
-                tty_device = optarg;
-                break;
-
-            case 's':
-                speed = canusb_int_to_speed(atoi(optarg));
-                break;
-
-            case 'b':
-                baudrate = atoi(optarg);
-                break;
-
-            case 'i':
-                inject_id = optarg;
-                break;
-
-            case 'j':
-                inject_data = optarg;
-                break;
-
-            case 'n':
-                terminate_after = atoi(optarg);
-                break;
-
-            case 'g':
-                inject_sleep_gap = strtof(optarg, NULL);
-                break;
-
-            case 'm':
-                inject_payload_mode = atoi(optarg);
-                break;
-
-            case '?':
-            default:
-                display_help(argv[0]);
-                return EXIT_FAILURE;
-        }
-    }
-
-    signal(SIGTERM, sigterm);
-    signal(SIGHUP, sigterm);
-    signal(SIGINT, sigterm);
-
-    if (tty_device == NULL) {
-        fprintf(stderr, "Please specify a TTY!\n");
-        display_help(argv[0]);
-        return EXIT_FAILURE;
-    }
-
-    if (speed == 0) {
-        fprintf(stderr, "Please specify a valid speed!\n");
-        display_help(argv[0]);
-        return EXIT_FAILURE;
-    }
-
-    tty_fd = adapter_init(tty_device, baudrate);
-    if (tty_fd == -1) {
-        return EXIT_FAILURE;
-    }
-
-    command_settings(tty_fd, speed, CANUSB_MODE_NORMAL, CANUSB_FRAME_STANDARD);
-
-    MIA_EGV_ACCEL_VAR_T accel_frame;
-    MIA_EGV_CMD_VAR_T cmd_frame;
-
-
-//    if (inject_data == NULL) {
-//        /* Dumping mode (default). */
-//        dump_data_frames(tty_fd);
-//    } else {
-//        /* Inject mode. */
-//        if (inject_id == NULL) {
-//            fprintf(stderr, "Please specify a ID for injection!\n");
-//            display_help(argv[0]);
-//            return EXIT_FAILURE;
-//        }
-//        if (inject_data_frame(tty_fd, inject_id, inject_data) == -1) {
-//            return EXIT_FAILURE;
-//        } else {
-//            return EXIT_SUCCESS;
-//        }
-//    }
-
-    while(1)
-    {
-
-        if(frame_send(tty_fd,(char*)&cmd_frame,sizeof cmd_frame) == -1) return EXIT_FAILURE;
-        usleep(50*1000);
-    }
-
-    return EXIT_SUCCESS;
 }
