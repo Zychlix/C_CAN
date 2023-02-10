@@ -351,9 +351,9 @@ static int convert_from_hex(const char *hex_string, unsigned char *bin_string, i
 
 
 
-static int inject_data_frame(int tty_fd, const char *hex_id, const char *hex_data)
+static int inject_data_frame(int tty_fd, const char *hex_id, const char *hex_data, int data_len)
 {
-    int data_len;
+
     unsigned char binary_data[8];
     unsigned char binary_id_lsb = 0, binary_id_msb = 0;
     struct timespec gap_ts;
@@ -367,7 +367,11 @@ static int inject_data_frame(int tty_fd, const char *hex_id, const char *hex_dat
     gettimeofday(&now, NULL);
     srandom(now.tv_usec);
 
-    data_len = convert_from_hex(hex_data, binary_data, sizeof(binary_data));
+    for(int i = 0; i< 8 && i< data_len; i++)
+    {
+        binary_data[i] = hex_data[i];
+    }
+
     if (data_len == 0) {
         fprintf(stderr, "Unable to convert data from hex to binary!\n");
         return -1;
@@ -630,12 +634,15 @@ int main(int argc, char *argv[])
 //            return EXIT_SUCCESS;
 //        }
 //    }
+    MIA_set_cmd_var(&cmd_frame);
+
 
     while(1)
     {
 
-        if(frame_send(tty_fd,(char*)&cmd_frame,sizeof cmd_frame) == -1) return EXIT_FAILURE;
-        usleep(50*1000);
+        if(inject_data_frame(tty_fd,MIA_EGV_CMD_ID,(const char*)&cmd_frame,sizeof MIA_EGV_CMD_ID) == -1) return EXIT_FAILURE;
+       // if(inject_data_frame(tty_fd,MIA_A))
+        usleep(500*1000);
     }
 
     return EXIT_SUCCESS;

@@ -1,7 +1,9 @@
 #pragma once
 #include "stdint.h"
 
-#define MIA_EGV_CMD_ID = 0x301;
+#define MIA_EGV_CMD_ID "301"
+#define MIA_EGV_ACCEL_VAR_ID "201"
+
 
 typedef struct MIA_EGV_CMD_VAR
 {
@@ -23,3 +25,20 @@ typedef struct MIA_EGV_ACCEL_VAR
     int drivebility_select_2 :1;
     int unused :1;
 } MIA_EGV_ACCEL_VAR_T;
+
+void MIA_set_cmd_var(MIA_EGV_CMD_VAR_T* command_frame)
+{
+    command_frame->discharge_current = 240;
+    command_frame->regen_current = 0;
+    command_frame->max_torque_ratio = 0;
+    command_frame->motor_fan_cmd = 0;
+}
+
+void MIA_set_accel_var(MIA_EGV_ACCEL_VAR_T* accel_frame)
+{
+    accel_frame->accel_set_point = 0;
+    accel_frame->regen = 0;
+    accel_frame->forward = 0;
+    accel_frame->reverse = 0;
+
+}
